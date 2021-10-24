@@ -114,7 +114,7 @@ void get_first() {
             }
         }
     }
-    cout << "first get" << endl;
+    //cout << "first get" << endl;
 }
 
 void get_follow() {
@@ -179,7 +179,7 @@ void get_follow() {
             now_size += (int)follow[i].size();
         }
     }
-    cout << "follow get" << endl;
+    //cout << "follow get" << endl;
 }
 
 void make_table() {
@@ -200,23 +200,34 @@ void make_table() {
         }
     }
 
-//    cout << setw(10);
-//    for(auto i : terminal) {
-//        cout << i << "          ";
-//    }
-//    cout << endl;
-//    for(auto i : non_terminal) {
-//        cout << i << setw(10);
-//        for(auto j : terminal) {
-//            auto key = make_pair(i, j);
-//            if(!table[key].empty())
-//                cout << i << " -> " << table[key][0] << setw(10);
-//            else
-//                cout << "          ";
-//        }
-//        cout << endl;
-//    }
-    cout << "table get" << endl;
+    cout << setw(15) << " ";
+    for(const auto& i : terminal) {
+        cout << setw(15) << i;
+    }
+    cout << endl;
+    for(const auto& i : non_terminal) {
+        cout << setw(15) << i;
+        int len = 0;
+        for(const auto& j : terminal) {
+            auto key = make_pair(i, j);
+            if(!table[key].empty()) {
+                if((table[key][0] != key.first) && (table[key][0] != "~")) {
+                    cout << setw(15-len) <<i <<" -> " <<table[key][0];
+                    len = (int)i.size() + table[key][0].size()+3;
+                }
+                else {
+                    table[key][0].clear();
+                    cout << setw(15) << " ";
+                }
+            }
+            else {
+                cout << setw(15) << " ";
+            }
+
+        }
+        cout << endl;
+    }
+    //cout << "table get" << endl;
 }
 
 void analyze() {
@@ -244,6 +255,18 @@ void analyze() {
             input.pop();
             status.pop();
         }
+        else {
+            cout << "wrong sentence" << endl;
+            return;
+        }
     }
     cout << "analyze get" << endl;
 }
+
+
+
+
+/*
+ * 1. 关于格式化输出setw, 由于setw为格式化输出下一个输出，若想完成形如 a -> b，则需要获取上一个输入的长度，并动态修改setw()的大小
+ * 2.
+ */
