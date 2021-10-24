@@ -30,7 +30,6 @@ void get_first();
 void get_follow();
 void make_table();
 void analyze();
-//void output();
 void find_terminal(const string &left, const string &right, int times, const string& init);
 
 int main() {
