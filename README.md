@@ -1,388 +1,387 @@
-﻿# 语法分析 - LL (1) 实验报告
+# 编译原理与设计
 
-> 2016/11/10
 
-## 实验目的
 
-1. 编程实现对算术表达式的语法分析程序
-2. 理解并掌握语法分析程序
+**题目**：语法分析程序的设计与实现
+
+**班级**：<u>2019211308</u>
+
+**学号**：<u>2019211517</u>
+
+**姓名**：<u>王恒杰</u>
+
+
 
 ## 实验内容
 
-实现如下文法的语法分析程序： 
+* ### 题目：
 
-```
-E -> E + T | E - T | T
-T -> T * F | T / F | F
-F -> ( E ) | num
-```
+  与法分析程序的设计与实现
 
-1. 实现**自动**构造LL(1)分析表
-2. 实现LL(1)分析程序
+* ### 实验内容
 
-## 算法设计
+  编写语法分析程序，实现对算术表达式的语法分析。
 
-### Part 1
+* ### 实验要求
 
-- 读入文法
-- 消除左递归
-  - 给定一个所有**非终结符**顺序，根据这个顺序**遍历**所有非终结符
-    - 按顺序当前符号产生式中排在当前符号**前边**的非终结符用对应**产生式**代替
-    - 所有**带左递归**产生式**替换**： `A -> A alpha => A' -> alpha A'`
-    - 在所有产生式**尾部插入 A'**： `A -> beta => A -> beta A'`
-    - **插入** `A' -> epsilon`
-- 提取左因子
-  - 遍历所有**非终结符的每个产生式**找出**公共前缀**
-  - **替换** `A -> X alpha | X beta => _A -> alpha | beta`
-  - 如果`alpha beta`有空，**插入** `_A -> epsilon`
-  - **插入** `A -> X _A`
-  - **循环**这个过程直到无左因子
-- 构造LL(1)分析表
-  - 找**First集**
-    - Frist[终结符号] = { 终结符号 }
-    - **遍历**每个产生式**每个符号**
-      - First[产生式左端非终结符] += First[当前符号]
-      - 如果First[当前符号]没有**epsilon**
-        - **结束**遍历
-      - 如果**全部遍历的**符号的First有**epsilon**
-        - First[产生式左端非终结符] += { epsilon }
-    - **循环**这个过程直到不再增加
-  - 找**Follow集**
-    - **遍历**每个产生式**每个符号**，跳过**终止符号**
-      - 将下一个符号First集加入当前符号的Follow集
-      - 如果下一个符号不存在 或 First[当前符号]有**epsilon**
-        - Follow[当前符号] += Follow[产生式左端非终结符]
-    - **循环**这个过程直到不再增加
-  - 生成分析表
-    - **遍历**First[每个产生式**右端第一个符号**]
-      - 如果First[i]不为**epsilon**
-        - **产生式** 加入 **分析表**[产生式左端非终结符, First[i]]
-      - 否则，**遍历**Follow[产生式左端非终结符]
-        - **产生式** 加入 **分析表**[产生式左端非终结符, Follow[i]]
-    - 如果存在**多重表项**
-      - 不是LL(1)文法，**报错**
-  - 加入错误处理**sync**
-    - **遍历**Follow[每一个非终结符]
-      - 如果 **分析表**[非终结符, Follow[i]]为空
-        - **sync** 加入 **分析表**[非终结符, Follow[i]]
-- 打印文法
-- 打印LL(1)分析表
+  在对输入的算术表达式进行分析的过程中，一次输出所采用的产生式。
 
-### Part 2
+* ### 实验方法
 
-- 读入待分析表达式集
-- 分析表达式集
-  - 切分表达式
-  - 初始化分析器
-    - 输入流尾部插入$
-    - 分析栈压入 $ 和 起始符
-  - 循环直到 栈空 或 输入读完
-    - 如果栈顶是非终结符
-      - 如果 分析表项 非空
-        - 弹栈
-        - 如果 分析表项 不为**sync**
-          - 反向压入 分析表项，输出
-        - 否则
-          - 报错
-      - 否则
-        - 报错，后移指针
-    - 如果栈顶是终止符号 或 $
-      - 弹栈
-      - 如果 栈顶 == 当前输入
-        - 后移指针
-        - 如果 栈顶 == 当前输入 == $
-          - 退出循环
-      - 否则
-        - 报错
-- 输出分析结果
+  编写LL(1)语法分析程序
 
-## 架构设计
+  1. 编程实现课本算法4.2，为给定文法自动构造预测分析表
 
-### LL1Parser
+  2. 编写实现课本算法4.1，构造LL(1)预测分析程序。
 
-函数成员：
+     
 
-- `Parse (istream, ostream)`  // 分析待分析表达式集
+## 运行开发环境
 
-### Grammar
+* **系统环境**：macOS Big Sur: 11.4
 
-数据成员：
+* **编译环境**：Clion: 11.0.10+9-b1341.41 aarch64
 
-- `startSymbol`
-- 集合: `non_terminal_map`
-- 集合: `terminal_symbols_map`
-- 映射: `productionRules`
-  - 非终结符 -> { 产生式 } = { { 符号 } }
+* **版本管理工具**：github
 
-函数成员：
+  
 
-- `FixLeftRecursion ()`  // 消除左递归
-- `FixLeftCommonFactor ()`  // 提取左因子
+## 设计、实现说明
 
-### LL1Grammar : Grammar
+* ### 该要设计
 
-数据成员：
+  #### 1. 实现为给定文法自动构造预测分析表
 
-- 继承 `Grammar` 成员
-- 映射: `table`
-  - (终结符, 非终结符) -> 产生式 = { { 符号 } }
+  * 从input.txt文件中读取未经处理的原始文法
+  * 消除左递归
+  * 消除左公因子
+  * 打印文法，并将处理后的文法输出到input.out.txt文件
+  * 构造LL1预测分析表
+    * 构造FIRST集
+    * 构造FOLLOW集
+    * 生成分析表
+    * 加入错误处理sync
+    * 打印LL1分析表，并将分析表输出到LL1_table.txt文件
 
-函数成员：
+  #### 2. 构造LL1预测分析程序
 
-- 继承 `Grammar` 成员
-- `GetLL1Table ()`  // 生成LL(1)分析表
+  * 读入待分析表达式
+  * 读入LL1分析表
+    * 初始化分析器
+    * 循环直到栈空
+    * 输出每次所采用的产生式
+  * 输出分析结果(接受或不接受)
 
-### Lexer
+  ![image-20211025090032129](https://tva1.sinaimg.cn/large/008i3skNly1gvra1fy6ssj60ve0u0q6e02.jpg)
 
-数据成员：
+  <!--之所以把左递归回溯、构造分析表、LL1分析程序三者分开，是出于对提高分析程序的简洁与运行性能的考量-->
 
-- 集合: `tokens`
+* ### 详细设计
 
-函数成员：
+* ##### 1. 结构变量说明
 
-- `Lexer (istream, puncSet)`
-  - `istream` 待分析表达式输入流
-  - `puncSet` 标点符号集合
+  ```C++
+  set<string> non_terminal, terminal; //使用set存储非终结符与终结符，省去对重复项的过滤
+  map<string, set<string>> first, follow; //使用hash_map存储first、follow集，string到set<string>的映射同样可以省去对重复项的过滤
+  map<string, vector<string>> G;  //存储文法
+  map<string, string> still_empty;    //用于构造follow集时出现的未计算的产生式
+  string s;   //待分析表达式
+  string start;   //起始非终结符
+  
+  struct StringPairHash
+  {
+      size_t operator()(
+              const pair<std::string, string> &obj) const
+      {
+          static const hash<string> hash;
+          return (hash (obj.first) << 16) + hash (obj.second);
+      }
+  };
+  unordered_map<pair<string, string>, vector<string>, StringPairHash> table;  //预测分析表，使用pair<string, string>到vector<string>的映射
+  ```
 
-## 输入输出
+* ##### 2. 函数成员
 
-### `int main (int argc, char *argv[])`
+  ```C++
+  void fix_left_recursion();	//消除左递归
+  void fix_left_common_factor();	//消除回溯
+  void read_input_out_txt();	//读取处理好的文法输入文件
+  void get_first();	//获取first集
+  void get_follow();	//获取follow集
+  void make_table();	//构造预测分析表
+  void analyze();	//预测分析
+  void find_terminal(const string &left, const string &right, int times, const string& init);	//求解first集所用递归函数
+  vector<string> split_blank(const string& str);	//获取文件读入划分字符串
+  ```
 
-- 检查`argc` 是否合法 (`argc >= 3`)
-  - `argv[1]` 为语法定义文件
-  - `argv[2]` 为待识别文件
-- 打开输入/输出文件，并判断释放成功
-- 将**语法定义文件输入流**传入`LL1Parser`，生成语法分析器
-- 将**语法输出流**用于打印**语法**及**LL(1)分析表**
-- 将**待识别文件 输入/输出 流**传入`LL1Parser.Parse`进行分析
+  
 
-### 输入格式
+* ##### 3. 构造FIRST集
 
-文件允许的换行符：
-- Windows `\r\n`
-- Linux `\n`
+  ![image-20211025091013728](https://tva1.sinaimg.cn/large/008i3skNly1gvrabhc6suj60u010lq6402.jpg)
 
-#### 语法定义文件
+​	
 
-每个非终止符号的**所有推导**用**一行**列出，**各个产生式**用**管道线**隔开，
-**各个符号**之间用**界符**隔开：
+```C++
+void find_terminal(const string &left, const string &right, int times, const string& init) {
+    if(terminal.find(right.substr(0, 1)) != terminal.end()) {
+        first[left].insert(right.substr(0, 1));
+        first[init].insert(right.substr(0, 1));
+        return;
+    }
+    else if(times < non_terminal.size()){
+        for(auto &i : G[right.substr(0, 1)]) {
+            find_terminal(left, i, times+1, init);
+        }
+    }
+    else return;
+}
 
-```
-E -> E + T | E - T | T
+void get_first() {
+    for(const auto& i : non_terminal) { //遍历每个非终结符
+        for(const auto& j : G[i]) { //遍历每个非终结对应右句
+            if(terminal.find(j.substr(0, 1)) != terminal.end()) {   //如果右式当前遍历项为非终结符，则加入first
+                first[i].insert(j.substr(0, 1));
+                first[j].insert(j.substr(0, 1));
+                //first[j] += j.substr(0, 1);
+            }
+            else {
+                find_terminal(i, j, 0, j);
+            }
+        }
+    }
+    //cout << "first get" << endl;
+}
 ```
 
-- `->` 表示**推导运算**
-- `|` 表示**管道线**
-- ` ` （空格）表示符号间的**界符**
-- `num` 表示**数字**
-- `epsilon` 表示**空产生式**
-- **其他符号** 表示文法的符号
-  - 在 `->` 前出现的符号 为**非终止符号**
-  - 所有符号除了非终止符号 为**终止符号**
 
-#### 待识别文件
 
-**行**为单位的**待分析表达式**
+* ##### 4. 构造FOLLOW集
 
-### 输出格式
+  ![image-20211025091225350](https://tva1.sinaimg.cn/large/008i3skNly1gvradrrpjcj60u00ysgpl02.jpg)
 
-#### 语法输出
 
-- 去左递归后的语法
-  - 开始符号
-  - 非终结符号
-  - 终结符号
-  - 产生式列表
-- LL(1)分析表
 
-#### 待识别文件输出
-
-每一个**待分析表达式**的 **最左推导/错误处理** 结果
-
-## 运行样例
-
-### Windows MSVC 2015 (Visual Studio 2015)
-
-运行 `LL1Parser.vcxproj`, 并使用参数 `Grammar.txt Input.txt`
-
-也可以编译为 `LL1Parser.exe` 之后
-
-在命令提示符输入 `LL1Parser Grammar.txt Input.txt`
-
-Remarks:
-
-- Grammar.txt 为文法输入
-- Input.txt 为表达式输入
-
-### Unix/Unix-like
-
-在终端中输入
-
-``` bash
-g++ LL1Parser.cpp -std=c++11 -o LL1Parser
-./LL1Parser Grammar.txt Input.txt
+```C++
+void get_follow() {
+    //规则1
+    follow[start].insert("$");
+    int pre_size = -1, now_size = 0;
+    while(pre_size != now_size) {
+        pre_size = now_size;
+        for(const auto& i : G) {
+            vector<string> elements = i.second;
+            for(auto & element : elements) {
+                if(element[0] != '~') { //当前非epsilon
+                    for(int k = 0; k < element.size()-1; k++) {
+                        string cur = element.substr(k, 1), next = element.substr(k+1, 1);
+                        if(terminal.find(cur) != terminal.end()) { //若当前字符为终结符
+                            follow[cur].insert(cur);    //终结符本身的follow集即为自身
+                        }
+                        else{
+                            if(terminal.find(next) != terminal.end()) {  //若下一个为终结符
+                                follow[cur].insert(next);
+                            }
+                            else {  //下一个为非终结符，加入next的first
+                                //if(first[next].find("~") == first[next].end()) {    //若下一个是非终结符并且该非终结符不包含epsilon
+                                    for(const auto& l : first[next]) {  //加入他的first集
+                                        if(l != "~")
+                                            follow[cur].insert(l);
+                                    }
+                                //}
+                                if(first[next].find("~") != first[next].end()) {  //若下一个是非终结符并且包含epsilon
+                                    if(!follow[i.first].empty())
+                                    for(const auto& l : follow[i.first]) {
+                                        follow[cur].insert(l);
+                                        still_empty[next] = cur;
+                                    }
+                                    else {
+                                        still_empty[next] = cur;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    string k = element.substr((int)element.size()-1 ,1);
+                    if(terminal.find(k) == terminal.end()) {
+                        if(!follow[i.first].empty()) {  //若不为空
+                            for(const auto& l : follow[i.first]) {
+                                follow[k].insert(l);
+                                still_empty[k] = i.first;
+                            }
+                        }
+                        else {
+                            still_empty[k] = i.first;
+                        }
+                    }
+                }
+            }
+        }
+        for(const auto& i : still_empty) {
+            follow[i.first].insert(follow[i.second].begin(), follow[i.second].end());
+        }
+        now_size = 0;
+        for(const auto& i : non_terminal) {
+            now_size += (int)follow[i].size();
+        }
+    }
+    //cout << "follow get" << endl;
+}
 ```
 
-Remarks:
+* ##### 5. 构造预测分析表
 
-- Grammar.txt 为文法输入
-- Input.txt 为表达式输入
+  ![image-20211025093336051](https://tva1.sinaimg.cn/large/008i3skNly1gvrazst6o6j60jc12odin02.jpg)	
 
-### Input
+```C++
+void analyze() {
+    stack<string> status, input;
+    status.push("$");
+    status.push(start);
+    input.push("$");
+    for(int i = (int)s.size()-1; i >= 0; i--) {
+        input.push(s.substr(i, 1));
+    }
 
-#### Grammar.txt
-
-```
-E -> E + T | E - T | T
-T -> T * F | T / F | F
-F -> ( E ) | num
-```
-
-#### Input.txt
-
-```
-* (3.3 - 2) * + ( * + 2
-(3.5/(2-4*.8/2)-2*3.+(2/(2)-2))+2
-```
-
-### Output
-
-#### Grammar.txt.output.txt
-
-```
-Grammar:
-Starting Symbol:
-	E
-Non Terminal Symbols:
-	E T F E' T' 
-Terminal Symbols:
-	( ) num + - * epsilon / 
-Production Rules:
-	E -> T E'
-	T -> F T'
-	F -> ( E ) | num
-	E' -> + T E' | - T E' | epsilon
-	T' -> * F T' | / F T' | epsilon
-
-LL1 Table:
-<E, (>         E -> T E'
-<T, (>         T -> F T'
-<F, (>         F -> ( E )
-<F, $>         F -> sync
-<T, $>         T -> sync
-<E, $>         E -> sync
-<T', $>        T' -> epsilon
-<E, num>       E -> T E'
-<T, num>       T -> F T'
-<F, num>       F -> num
-<E', $>        E' -> epsilon
-<F, +>         F -> sync
-<T, +>         T -> sync
-<T', +>        T' -> epsilon
-<E', +>        E' -> + T E'
-<F, ->         F -> sync
-<T, ->         T -> sync
-<T', ->        T' -> epsilon
-<E', ->        E' -> - T E'
-<F, )>         F -> sync
-<T, )>         T -> sync
-<E, )>         E -> sync
-<T', )>        T' -> epsilon
-<E', )>        E' -> epsilon
-<F, *>         F -> sync
-<T', *>        T' -> * F T'
-<F, />         F -> sync
-<T', />        T' -> / F T'
+  //格式化输出预测分析表
+    int cnt = 1;
+    while(status.top() != "$" && input.top() != "$") {
+        string sta = status.top(), inp = input.top();
+        auto key = make_pair(sta, inp);
+        if(non_terminal.find(sta) != non_terminal.end()) {
+            status.pop();
+            if(!table[key].empty()) {
+                //输出
+                cout << "(" <<cnt << ") " << sta << " -> " << table[key][0] << endl;
+                //逆序压栈
+                for(int i = (int)table[key][0].size()-1; i >= 0; i--) {
+                    status.push(table[key][0].substr(i, 1));
+                }
+            }
+        }
+        else if(sta == inp) {
+            input.pop();
+            status.pop();
+        }
+        else {
+            cout << "wrong sentence" << endl;
+            return;
+        }
+    }
+    cout << "analyze get" << endl;
+}
 ```
 
-#### Input.txt.output.txt
 
-```
-Parse $* (3.3 - 2) * + ( * + 2$ :
-Err: E | *              Skip *
-E -> T E'
-T -> F T'
-F -> ( E )
-E -> T E'
-T -> F T'
-F -> num
-T' -> epsilon
-E' -> - T E'
-T -> F T'
-F -> num
-T' -> epsilon
-E' -> epsilon
-T' -> * F T'
-Err: F | +               Pop F
-T' -> epsilon
-E' -> + T E'
-T -> F T'
-F -> ( E )
-Err: E | *              Skip *
-Err: E | +              Skip +
-E -> T E'
-T -> F T'
-F -> num
-T' -> epsilon
-E' -> epsilon
-Err: ) | $               Pop )
-T' -> epsilon
-E' -> epsilon
 
-Parse $(3.5/(2-4*.8/2)-2*3.+(2/(2)-2))+2$ :
-E -> T E'
-T -> F T'
-F -> ( E )
-E -> T E'
-T -> F T'
-F -> num
-T' -> / F T'
-F -> ( E )
-E -> T E'
-T -> F T'
-F -> num
-T' -> epsilon
-E' -> - T E'
-T -> F T'
-F -> num
-T' -> * F T'
-F -> num
-T' -> / F T'
-F -> num
-T' -> epsilon
-E' -> epsilon
-T' -> epsilon
-E' -> - T E'
-T -> F T'
-F -> num
-T' -> * F T'
-F -> num
-T' -> epsilon
-E' -> + T E'
-T -> F T'
-F -> ( E )
-E -> T E'
-T -> F T'
-F -> num
-T' -> / F T'
-F -> ( E )
-E -> T E'
-T -> F T'
-F -> num
-T' -> epsilon
-E' -> epsilon
-T' -> epsilon
-E' -> - T E'
-T -> F T'
-F -> num
-T' -> epsilon
-E' -> epsilon
-T' -> epsilon
-E' -> epsilon
-T' -> epsilon
-E' -> + T E'
-T -> F T'
-F -> num
-T' -> epsilon
-E' -> epsilon
+* ##### 6. 预测分析表达式
+
+  ![image-20211025103313050](https://tva1.sinaimg.cn/large/008i3skNly1gvrcpu5oz0j60t8112gps02.jpg)
+
+
+
+```C++
+void analyze() {
+    stack<string> status, input;
+    status.push("$");
+    status.push(start);
+    input.push("$");
+    for(int i = (int)s.size()-1; i >= 0; i--) {
+        input.push(s.substr(i, 1));
+    }
+
+    int cnt = 1;
+    while(status.top() != "$" && input.top() != "$") {
+        string sta = status.top(), inp = input.top();
+        auto key = make_pair(sta, inp);
+        if(non_terminal.find(sta) != non_terminal.end()) {
+            status.pop();
+            if(!table[key].empty()) {
+                //输出
+                cout << "(" <<cnt << ") " << sta << " -> " << table[key][0] << endl;
+                //逆序压栈
+                for(int i = (int)table[key][0].size()-1; i >= 0; i--) {
+                    status.push(table[key][0].substr(i, 1));
+                }
+            }
+        }
+        else if(sta == inp) {
+            input.pop();
+            status.pop();
+        }
+        else {
+            cout << "wrong sentence" << endl;
+            return;
+        }
+    }
+    cout << "analyze get" << endl;
+}
 ```
+
+
+
+## 测试说明
+
+* ##### 使用说明
+
+  为便于测试，将文件简化为一个cpp文件与一个txt输入文件，分别为
+
+  * LL1Paraser3_0.cpp
+
+  * input.out.txt
+
+    输入文件格式为：
+
+    1. 起始符
+    2. 非终结符
+    3. 终结符
+    4. 产生式
+
+    示例：
+
+![image-20211025104959184](https://tva1.sinaimg.cn/large/008i3skNly1gvrd7a3ydjj606g0a0q2v02.jpg) </left>
+
+* ##### 输出
+
+* 
+
+  ```
+                 (              )              ,              a              b              $
+  A                                                           A -> a         A -> b               
+  B              B -> (L)                                                                           
+  E              E -> B                                       E -> A         E -> A               
+  L              L -> EM                                      L -> EM        L -> EM               
+  M                                            M -> ,L                                             
+  
+  ```
+
+* ```
+  (1) E -> B
+  (2) B -> (L)
+  (3) L -> EM
+  (4) E -> A
+  (5) A -> a
+  (6) M -> ,L
+  (7) L -> EM
+  (8) E -> B
+  (9) B -> (L)
+  (10) L -> EM
+  (11) E -> A
+  (12) A -> a
+  (13) M -> ,L
+  (14) L -> EM
+  (15) E -> B
+  (16) B -> (L)
+  (17) L -> EM
+  (18) E -> A
+  (19) A -> b
+  (20) M -> ,L
+  (21) L -> EM
+  (22) E -> B
+  (23) B -> (L)
+  (24) L -> EM
+  (25) E -> A
+  
+  ```
+
+  
