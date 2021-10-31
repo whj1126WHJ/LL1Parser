@@ -1,7 +1,8 @@
-num id ( )
 E
+E A B L M
+, ( ) a b ~
 E A B
-A num id
-B ( L )
-L E L'
-L' EL' epsilon
+A a b
+B (L)
+L EM
+M ,L ~
